@@ -1,0 +1,16 @@
+{
+    "scan_interval_seconds": 5,
+    "hung_timeout_seconds": 15,
+    "auto_kill_enabled": false,
+    "ignore_list": [
+        "explorer.exe",
+        "System",
+        "Idle",
+        "SearchUI.exe",
+        "ShellExperienceHost.exe"
+    ],
+    "notifications": {
+        "show_alerts": true,
+        "play_sound": true
+    }
+}
