@@ -5,7 +5,7 @@ def intentionally_deadlock():
     print("Deadlock triggered! The app will now freeze.")
     print("Try clicking on this window or dragging it...")
     # This blocks the main GUI event loop, instantly causing a "Hung" state
-    time.sleep(60) 
+    time.sleep(260) 
 
 # Create a basic Windows GUI
 root = tk.Tk()
