@@ -5,7 +5,7 @@ from pystray import MenuItem as item
 from PIL import Image, ImageDraw
 from monitor import ProcessMonitor
 from notifier import AlertSystem
-import os
+import subprocess
 
 class DeadlockApp:
     def __init__(self):
@@ -56,7 +56,18 @@ class DeadlockApp:
 
     def force_close_app(self, pid):
         """Runs the taskkill command when a menu item is clicked."""
-        os.system(f"taskkill /F /T /PID {pid}")
+        # We pass the command and arguments as a list of strings
+        try:
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(pid)], 
+                check=True, 
+                capture_output=True, 
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW # Hides the brief command prompt flash
+            )
+            print(f"Successfully killed process {pid}")
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to kill process {pid}. Error: {e.stderr}")
 
     def background_scanner(self):
         """Runs continuously in the background to check for deadlocks."""
