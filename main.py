@@ -5,25 +5,18 @@ from pystray import MenuItem as item
 from PIL import Image, ImageDraw
 from monitor import ProcessMonitor
 from notifier import AlertSystem
+import os
 
 class DeadlockApp:
     def __init__(self):
         self.monitor = ProcessMonitor()
         self.notifier = AlertSystem()
         self.is_running = True
-        
-        # Determine scan interval from config (default 5 seconds)
+        self.current_deadlocks = []
         self.scan_interval = self.monitor.config.get("scan_interval_seconds", 5)
 
-        # Build the System Tray menu
-        self.menu = pystray.Menu(
-            item('Status: Running', lambda: None), # Just an info text, does nothing
-            pystray.Menu.SEPARATOR,
-            item('Quit', self.quit_app)
-        )
-
-        # Initialize the tray icon (Start with Green)
-        self.icon = pystray.Icon("DeadlockResolver", self.create_icon('green'), "Deadlock Resolver", self.menu)
+        # Start with the default healthy menu
+        self.icon = pystray.Icon("DeadlockResolver", self.create_icon('green'), "System : Healthy", menu=pystray.Menu(self.get_menu()))
 
     def create_icon(self, color):
         """Generates the colored circle for the taskbar."""
@@ -32,31 +25,69 @@ class DeadlockApp:
         dc.ellipse((0, 0, 64, 64), fill=color)
         return image
 
+    def get_menu(self):
+        """Builds a fresh menu object based on the CURRENT deadlocks list."""
+        if not self.current_deadlocks:
+            return pystray.Menu(
+                item('System : Healthy', lambda: None),
+                pystray.Menu.SEPARATOR,
+                item('Quit', self.quit_app)
+            )
+        else:
+            menu_items = [
+                item('Status : Deadlocks Detected!', lambda: None),
+                pystray.Menu.SEPARATOR
+            ]
+            
+            # --- FIX: Create a factory function to bind the PID safely ---
+            def make_action(target_pid):
+                return lambda icon, item: self.force_close_app(target_pid)
+            
+            # Add a clickable force-close option for EACH frozen app
+            for app in self.current_deadlocks:
+                # Use the factory function to generate a valid 2-argument lambda
+                action = make_action(app['pid'])
+                menu_items.append(item(f"Force Kill {app['name']} (PID: {app['pid']})", action))
+                
+            menu_items.append(pystray.Menu.SEPARATOR)
+            menu_items.append(item('Quit', self.quit_app))
+            
+            return pystray.Menu(*menu_items)
+
+    def force_close_app(self, pid):
+        """Runs the taskkill command when a menu item is clicked."""
+        os.system(f"taskkill /F /T /PID {pid}")
+
     def background_scanner(self):
         """Runs continuously in the background to check for deadlocks."""
         while self.is_running:
-            # 1. Scan the OS for frozen apps
-            deadlocks = self.monitor.scan_for_deadlocks()
+            # 1. Update our main list of frozen apps
+            self.current_deadlocks = self.monitor.scan_for_deadlocks()
             
-            if deadlocks:
+            # --- THE FIX: FORCE WINDOWS TO UPDATE THE MENU ---
+            self.icon.menu = self.get_menu()
+            
+            if self.current_deadlocks:
                 # 2. Change Taskbar Icon to RED
                 self.icon.icon = self.create_icon('red')
-                self.icon.title = f"Warning: {len(deadlocks)} app(s) hung!"
                 
-                # 3. Fire notifications for each hung app
-                for app in deadlocks:
+                # 3. Format the HOVER text
+                status_lines = [f"{app['name']} : Hung" for app in self.current_deadlocks]
+                hover_text = "\n".join(status_lines)
+                
+                if len(hover_text) > 120:
+                    hover_text = hover_text[:117] + "..."
+                self.icon.title = hover_text
+                
+                # 4. Fire notifications
+                for app in self.current_deadlocks:
                     self.notifier.send_deadlock_alert(app['name'], app['pid'])
                     
-                    # Optional: If auto-kill is enabled in config, kill it automatically
-                    if self.monitor.config.get("auto_kill_enabled"):
-                        import os
-                        os.system(f"taskkill /F /PID {app['pid']}")
             else:
-                # 4. If system is healthy, ensure icon is GREEN
+                # 5. If system is healthy, ensure icon is GREEN
                 self.icon.icon = self.create_icon('green')
-                self.icon.title = "System Healthy"
+                self.icon.title = "System : Healthy"
             
-            # 5. Sleep until the next scan cycle
             time.sleep(self.scan_interval)
 
     def quit_app(self, icon, item):
@@ -66,12 +97,8 @@ class DeadlockApp:
 
     def run(self):
         """Starts the background thread and the tray icon loop."""
-        # Spin up the background monitor as a daemon thread
-        # (Daemon means it will automatically die when the main program closes)
         monitor_thread = threading.Thread(target=self.background_scanner, daemon=True)
         monitor_thread.start()
-
-        # Start the blocking system tray loop
         print("Starting Deadlock Resolver. Check your System Tray!")
         self.icon.run()
 

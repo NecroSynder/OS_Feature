@@ -1,6 +1,6 @@
 {
-    "scan_interval_seconds": 5,
-    "hung_timeout_seconds": 15,
+    "scan_interval_seconds": 1,
+    "hung_timeout_seconds": 0,
     "auto_kill_enabled": false,
     "ignore_list": [
         "explorer.exe",
