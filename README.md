@@ -5,13 +5,15 @@
 Deadlock Resolver is a lightweight, background Windows utility designed to monitor the system for unresponsive ("Hung") graphical applications. It sits quietly in the system tray and proactively alerts the user via Windows Toast notifications when an application has frozen. Users can cleanly force-quit the offending application directly from the system tray menu or the notification itself.
 
 ## System Requirements
- - Operating System: Windows (Relies on `ctypes.windll.user32` Windows APIs)
- - Python: Python 3.14
- - Required Packages: `pystray`, `Pillow` (icon generation), `psutil`, `winotify`
+
+- Operating System: Windows (Relies on `ctypes.windll.user32` Windows APIs)
+- Python: Python 3.14
+- Required Packages: `pystray`, `Pillow` (icon generation), `psutil`, `winotify`
 
 ---
 
 ## Core Components
+
 1. `main.py` (Application Entry Point) manages the application's lifecycle and user interface.
    - **System Tray Integration:** Uses `pystray` to create an interactive taskbar icon.
    - **Dynamic Status:** The tray icon is a green circle when the system is healthy, and turns red when deadlocks are detected. Hovering over the red icon reveals the names of the hung applications.
@@ -30,10 +32,11 @@ Deadlock Resolver is a lightweight, background Windows utility designed to monit
 ---
 
 ## Configuration (config.json)
+
 The application's behavior is driven by the `config.json` file.
 
 | Setting                     | Type             | Description                                                                                                                                 |
-|-----------------------------|------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| --------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `scan_interval_seconds`     | Integer          | How often the background thread checks for deadlocks. Default in the provided config is `1` second.                                         |
 | `hung_timeout_seconds`      | Integer          | The grace period an app must remain unresponsive before being flagged. Currently set to `0` for immediate flagging.                         |
 | `auto_kill_enabled`         | Boolean          | Reserved for future use (currently `false`). Likely intended to automatically terminate apps without user input.                            |
@@ -44,6 +47,7 @@ The application's behavior is driven by the `config.json` file.
 ---
 
 ## Usage Guide
+
 1. **Start the Application:**
 Run python main.py in your terminal. You will see "Starting Deadlock Resolver. Check your System Tray!" printed in the console, and a green circle icon will appear in your taskbar.
 
