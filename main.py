@@ -75,7 +75,6 @@ class DeadlockApp:
             # 1. Update our main list of frozen apps
             self.current_deadlocks = self.monitor.scan_for_deadlocks()
             
-            # --- THE FIX: FORCE WINDOWS TO UPDATE THE MENU ---
             self.icon.menu = self.get_menu()
             
             if self.current_deadlocks:
